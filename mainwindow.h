@@ -77,8 +77,8 @@ private:
     int indexRecButton=0;
 
     QStringList sensorsList;
-
-
+    bool waitingForStartButton=0;
+    bool stopped=1;
     bool paused=0;
     bool noteNeeded=0;
     int comPrevIndex;

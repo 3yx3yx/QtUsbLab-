@@ -62,6 +62,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(serial3, SIGNAL(readyRead()), this, SLOT(getFromSerial()));
     connect(serial4, SIGNAL(readyRead()), this, SLOT(getFromSerial()));
     on_refreshCom_clicked();
+
+    ui->Value1->setStyleSheet("color: #fa7800");
+    ui->Value2->setStyleSheet("color: #00b43c");
+    ui->Value3->setStyleSheet("color: #64003c");
+    ui->Value4->setStyleSheet("color: #2d64ea");
 }
 
 MainWindow::~MainWindow()
@@ -224,12 +229,19 @@ void MainWindow::getFromSerial()
             {
                 for (int i =1; i<=3; i++)
                 {
-                    sensorsList.append("вход "+QString::number(i)+" "+moduleName);
+                    if(!sensorsList.contains("вход "+QString::number(i)+" "+moduleName))
+                    {sensorsList.append("вход "+QString::number(i)+" "+moduleName);}
+                    else return;
                 }
             }
-            else sensorsList.append(moduleName);
+            else
+            {
+                if(!sensorsList.contains(moduleName)){sensorsList.append(moduleName);}
+                else return;
+            }
             refreshComboBoxes=1;
             if(id==ID_MODULE_TIME){ paused=1; timeLast=0;interruptOnTime=0;}
+
         }
 
         if (serialString.section("#",2,2)=="dis")  //disconnect
@@ -265,6 +277,8 @@ void MainWindow::getFromSerial()
                 cb->addItem("...");
                 cb->addItems(sensorsList);
             }
+
+            return;  // go out from there
         }
     }
 
@@ -273,12 +287,13 @@ void MainWindow::getFromSerial()
     {
         if(value != -1)
         {
-            if(paused){timeLast=0; interruptOnTime=0; timer.start();}
+            if(waitingForStartButton){timer.start();waitingForStartButton=0; }
+            if(paused){timeLast=0; interruptOnTime=0;ui->timerStatus->setText("Секундомер запущен");}
             paused=0;
             interruptOnTime= value+timeLast;
-            timeLast = value;
+            timeLast = interruptOnTime;
         }
-        else {paused=1;}
+        else {paused=1; ui->timerStatus->setText("Секундомер остановлен"); return;} // go out from there
     }
 
 
@@ -307,7 +322,7 @@ void MainWindow::getFromSerial()
         }
     }
 
-    if(!paused)   { timerSlot(); }
+    if(!paused && !stopped)   { timerSlot(); }
 }
 
 
@@ -317,7 +332,7 @@ void  MainWindow::timerSlot()
     QComboBox *cb;
     QStringList list;
 
-    list.append(QString::number(timer.elapsed()));
+    list.append(QString::number((float)timer.elapsed()/1000,'f',3));
     if(sensorsList.contains("Секундомер"))
     {
         if(id==ID_MODULE_TIME) {list.append(QString::number(interruptOnTime,'f',4).replace('.',','));}
@@ -343,8 +358,8 @@ void  MainWindow::timerSlot()
         }
         if(cb->currentIndex()!=0)
         {
-             list.append(QString::number(val[i],'f',4).replace('.',','));
-             grph->addData(timer.elapsed(),val[i]);
+            list.append(QString::number(val[i],'f',4).replace('.',','));
+            grph->addData((float)timer.elapsed()/1000,val[i]);
         }
     }
 
@@ -417,9 +432,7 @@ void MainWindow::on_checkGraph4_stateChanged(int arg1)
 
 void MainWindow::on_addNoteButton_clicked()
 {
-
     noteNeeded =1;
-
 }
 
 
@@ -489,11 +502,14 @@ void MainWindow::on_startButton_clicked()
     lockControls(1);
 
     QStringList list;
-    list.append("время");
+    list.append("текущее время, с");
+    ui->timerStatus->clear();
     if(sensorsList.contains("Секундомер"))
     {
         list.append("сигнал на фотодатчике ");
         paused =  1;
+        waitingForStartButton = 1;
+        ui->timerStatus->setText("Ожидается запуск секундомера");
     }
     list.append(ui->combo1->currentText());
     list.append(ui->combo2->currentText());
@@ -503,7 +519,8 @@ void MainWindow::on_startButton_clicked()
 
     fillTabletLine(list);
 
-    timer.start();
+    if(!waitingForStartButton)timer.start();
+    stopped = 0;
 }
 
 
@@ -546,7 +563,7 @@ void MainWindow::setSerialBlock(bool status)
 void MainWindow::on_stopButton_clicked()
 {
     file->close();
-    paused=1;
+    stopped = 1;
     lockControls(0);
 }
 
@@ -589,8 +606,9 @@ void MainWindow::on_refreshCom_clicked()
     for (int i=0; i<comList.length();i++)
     {
         s = comList.at(i).description();
+
         qDebug()<< s;
-        if(s=="STM32 Virtual ComPort")
+        if(s=="STMicroelectronics Virtual COM Port")
         {
             portsConnected++;
             if (portsConnected>4)break;
