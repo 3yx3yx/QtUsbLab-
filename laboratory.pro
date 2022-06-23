@@ -10,16 +10,19 @@ CONFIG += c++11
 
 SOURCES += \
     axistag.cpp \
+    dialog.cpp \
     main.cpp \
     mainwindow.cpp \
     qcustomplot.cpp
 
 HEADERS += \
     axistag.h \
+    dialog.h \
     mainwindow.h \
     qcustomplot.h
 
 FORMS += \
+    dialog.ui \
     mainwindow.ui
 
 win32: RC_FILE = file.rc

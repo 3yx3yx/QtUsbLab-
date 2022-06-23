@@ -9,6 +9,8 @@
 #include<QtSerialPort/QSerialPortInfo>
 #include<QList>
 #include<QMessageBox>
+#include "dialog.h"
+#include "ui_dialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -250,10 +252,16 @@ void MainWindow::getFromSerial()
             {
                 for (int i =1; i<=3; i++)
                 {
-                    sensorsList.removeAll("вход "+QString::number(i)+" "+moduleName);
+                    if(sensorsList.contains("вход "+QString::number(i)+" "+moduleName))
+                    {sensorsList.removeAll("вход "+QString::number(i)+" "+moduleName);}
+                    else return;
                 }
             }
-            else sensorsList.removeAll(moduleName);
+            else
+            {
+                if(sensorsList.contains(moduleName)){sensorsList.removeAll(moduleName);}
+                else return;
+            }
             refreshComboBoxes=1;
             if(id==ID_MODULE_TIME) paused=0;
         }
@@ -265,15 +273,20 @@ void MainWindow::getFromSerial()
                 switch (i)
                 {
                 case 0 : cb = ui->combo1;
+                    l = ui->Value1;
                     break;
                 case 1 : cb = ui->combo2;
+                    l = ui->Value2;
                     break;
                 case 2 : cb = ui->combo3;
+                    l = ui->Value3;
                     break;
                 case 3 : cb = ui->combo4;
+                    l = ui->Value4;
                     break;
                 }
                 cb->clear();
+                l->clear();
                 cb->addItem("...");
                 cb->addItems(sensorsList);
             }
@@ -502,6 +515,7 @@ void MainWindow::on_startButton_clicked()
     lockControls(1);
 
     QStringList list;
+    QComboBox *cb;
     list.append("текущее время, с");
     ui->timerStatus->clear();
     if(sensorsList.contains("Секундомер"))
@@ -511,10 +525,25 @@ void MainWindow::on_startButton_clicked()
         waitingForStartButton = 1;
         ui->timerStatus->setText("Ожидается запуск секундомера");
     }
-    list.append(ui->combo1->currentText());
-    list.append(ui->combo2->currentText());
-    list.append(ui->combo3->currentText());
-    list.append(ui->combo4->currentText());
+    else  waitingForStartButton = 0;
+
+    for (int i=0;i<4;i++)
+    {
+
+        switch (i)
+        {
+        case 0 : cb = ui->combo1;
+            break;
+        case 1 : cb = ui->combo2;
+            break;
+        case 2 : cb = ui->combo3;
+            break;
+        case 3 : cb = ui->combo4;
+            break;
+        }
+        if(cb->currentIndex()!=0) list.append(cb->currentText());
+        else list.append("");
+    }
 
 
     fillTabletLine(list);
@@ -548,17 +577,7 @@ void MainWindow::fillTabletLine(QStringList list)
     txtstr->operator<<(s);
 }
 
-void MainWindow::setSerialBlock(bool status)
-{
-    serial2->clear();
-    serial1->clear();
-    serial2->blockSignals(status);
-    serial1->blockSignals(status);
-    serial3->clear();
-    serial4->clear();
-    serial3->blockSignals(status);
-    serial4->blockSignals(status);
-}
+
 
 void MainWindow::on_stopButton_clicked()
 {
@@ -577,18 +596,22 @@ void MainWindow::lockControls(bool isStarted)
     ui->combo3->setDisabled(isStarted);
     ui->combo4->setDisabled(isStarted);
     ui->pushButton->setDisabled(isStarted);//export
+    ui->refreshCom->setDisabled(isStarted);
 }
 
 void MainWindow::on_pushButton_clicked()//export
 {
 
     QString filenameExport;
-    QFileDialog dialog;
-    dialog.setFileMode(QFileDialog::AnyFile);
-    filenameExport = dialog.getSaveFileName(NULL, "Create New File","",tr("jpg(*.jpg)"));
-    if(dialog.Accepted)
+    QFileDialog fdialog;
+    Dialog d;
+    d.exec();
+
+    fdialog.setFileMode(QFileDialog::AnyFile);
+    filenameExport = fdialog.getSaveFileName(NULL, "Create New File","",tr("jpg(*.jpg)"));
+    if(fdialog.Accepted)
     {
-        ui->widget->saveJpg(filenameExport,12000,3000,1.0,-1,96);
+        ui->widget->saveJpg(filenameExport,d.width,d.height,d.size,-1,d.dpi);
     }
 }
 

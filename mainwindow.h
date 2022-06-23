@@ -9,6 +9,8 @@
 #include <QTextStream>
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -88,7 +90,6 @@ private:
 
     void clearTabAndGraph();
     void fillTabletLine(QStringList list);
-    void setSerialBlock(bool status);
     void lockControls(bool isStarted);
 
 private slots:
