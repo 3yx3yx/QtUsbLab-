@@ -1,0 +1,10 @@
+debug/axistag.o
+debug/dialog.o
+debug/main.o
+debug/mainwindow.o
+debug/qcustomplot.o
+debug/qrc_icons.o
+debug/moc_axistag.o
+debug/moc_dialog.o
+debug/moc_mainwindow.o
+debug/moc_qcustomplot.o

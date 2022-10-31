@@ -101,11 +101,12 @@ void MainWindow::getFromSerial()
     if(!ok) return;
     if (id>100)
     {
-        input = id%100;
-        id = id - (input*100);
+        int tmp = id%100;
+        input = (id - tmp)/100 - 1;
+        id = tmp;
     }
-
     value = serialString.section("#",2,2).toFloat(&ok);
+    qDebug() << value;
     if(!ok){value=0;}
 
     switch (id)
@@ -340,12 +341,19 @@ void MainWindow::getFromSerial()
 
 
 void  MainWindow::timerSlot()
-{    
+{
     QPointer<QCPGraph> grph;
     QComboBox *cb;
     QStringList list;
+    double elapsedT= (float)timer.elapsed()/1000;
 
-    list.append(QString::number((float)timer.elapsed()/1000,'f',3));
+    if((elapsedT-lastElapsedTime) > ui->doubleSpinBox->value())
+    {
+        lastElapsedTime=elapsedT;
+    }
+    else {if(id!=ID_MODULE_TIME)return;}
+
+    list.append(QString::number(elapsedT,'f',3));
     if(sensorsList.contains("Секундомер"))
     {
         if(id==ID_MODULE_TIME) {list.append(QString::number(interruptOnTime,'f',4).replace('.',','));}
@@ -372,7 +380,7 @@ void  MainWindow::timerSlot()
         if(cb->currentIndex()!=0)
         {
             list.append(QString::number(val[i],'f',4).replace('.',','));
-            grph->addData((float)timer.elapsed()/1000,val[i]);
+            grph->addData(elapsedT,val[i]);
         }
     }
 
@@ -504,7 +512,9 @@ void MainWindow::clearTabAndGraph()
 
 
 void MainWindow::on_startButton_clicked()
-{    
+{
+    lastElapsedTime=0;
+
     if (!file->isOpen())
     {
         QMessageBox::warning(this,"Файл не выбран","Создайте или откройте файл для сохранения результатов");
@@ -622,6 +632,7 @@ void MainWindow::on_refreshCom_clicked()
     QSerialPort *port;
     QList<QSerialPortInfo>  comList;
     comList = QSerialPortInfo::availablePorts();
+    qDebug() << "ok";
     qDebug()<< comList.length();
 
     int portsConnected=0;
@@ -661,4 +672,10 @@ void MainWindow::on_refreshCom_clicked()
 
 
 
+
+
+void MainWindow::on_comboBox_currentIndexChanged(int index)
+{
+
+}
 

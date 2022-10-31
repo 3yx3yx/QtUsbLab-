@@ -87,7 +87,7 @@ private:
     int id =0;
     float timeLast=0;
     float interruptOnTime=0;
-
+double lastElapsedTime;
     void clearTabAndGraph();
     void fillTabletLine(QStringList list);
     void lockControls(bool isStarted);
@@ -111,5 +111,6 @@ private slots:
     void getFromSerial();
 
     void on_addNoteButton_clicked();
+    void on_comboBox_currentIndexChanged(int index);
 };
 #endif // MAINWINDOW_H
