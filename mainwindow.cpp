@@ -220,7 +220,14 @@ void MainWindow::getFromSerial()
 
     if(input>0)
     {
-        moduleName = "вход "+QString::number(input)+" "+moduleName;
+        if (id != ID_MODULE_LIGHT)
+            moduleName = "вход "+QString::number(input)+" "+moduleName;
+        else
+        {
+            QString colors[3] = {"красный","зеленый","синий"};
+            moduleName=    (moduleName+" - "+colors[input]);
+            units = "";
+        }
     }
 
     if(!ok) // if valueSection is not float
@@ -230,9 +237,10 @@ void MainWindow::getFromSerial()
         {
             if(id==ID_MODULE_FORCE||id==ID_MODULE_WEIGHT||id==ID_MODULE_DIF_PRESSURE)
             {
+
                 for (int i =1; i<=3; i++)
                 {
-                    if(!sensorsList.contains("вход "+QString::number(i)+" "+moduleName))
+                    if(sensorsList.contains("вход "+QString::number(i)+" "+moduleName))
                     {sensorsList.append("вход "+QString::number(i)+" "+moduleName);}
                     else return;
                 }
@@ -240,7 +248,19 @@ void MainWindow::getFromSerial()
             else
             {
                 if(!sensorsList.contains(moduleName)){sensorsList.append(moduleName);}
-                else return;
+                else {return;}
+
+                if(id==ID_MODULE_LIGHT)
+                {
+                    QString colors[3] = {"красный","зеленый","синий"};
+                    for (int i =1; i<=3; i++)
+                    {
+                        if(!sensorsList.contains(moduleName+" - "+colors[i]))
+                        {sensorsList.append(moduleName+" - "+colors[i]);}
+                        else {return;}
+                    }
+                }
+
             }
             refreshComboBoxes=1;
             if(id==ID_MODULE_TIME){ paused=1; timeLast=0;interruptOnTime=0;}
@@ -262,6 +282,17 @@ void MainWindow::getFromSerial()
             {
                 if(sensorsList.contains(moduleName)){sensorsList.removeAll(moduleName);}
                 else return;
+
+                if(id==ID_MODULE_LIGHT)
+                {
+                    QString colors[3] = {"красный","зеленый","синий"};
+                    for (int i =1; i<=3; i++)
+                    {
+                        if(sensorsList.contains(moduleName+" - "+colors[i]))
+                        {sensorsList.removeAll(moduleName+" - "+colors[i]);}
+                        else {return;}
+                    }
+                }
             }
             refreshComboBoxes=1;
             if(id==ID_MODULE_TIME) paused=0;
@@ -522,44 +553,46 @@ void MainWindow::on_startButton_clicked()
         return;
     }
 
+    stopped = 0;
     lockControls(1);
 
     QStringList list;
     QComboBox *cb;
     list.append("текущее время, с");
     ui->timerStatus->clear();
-    if(sensorsList.contains("Секундомер"))
+
+    if(sensorsList.contains("Секундомер")&& !waitingForStartButton)
     {
-        list.append("сигнал на фотодатчике ");
         paused =  1;
         waitingForStartButton = 1;
-        ui->timerStatus->setText("Ожидается запуск секундомера");
+        ui->timerStatus->setText("Ожидается запуск секундомера,\nили нажмите кнопку СТАРТ");
     }
-    else  waitingForStartButton = 0;
-
-    for (int i=0;i<4;i++)
+    else
     {
+        waitingForStartButton = 0;
+        paused =  0;
+        timer.start();
 
-        switch (i)
+        if(sensorsList.contains("Секундомер"))list.append("сигнал на фотодатчике ");
+        for (int i=0;i<4;i++)
         {
-        case 0 : cb = ui->combo1;
-            break;
-        case 1 : cb = ui->combo2;
-            break;
-        case 2 : cb = ui->combo3;
-            break;
-        case 3 : cb = ui->combo4;
-            break;
+
+            switch (i)
+            {
+            case 0 : cb = ui->combo1;
+                break;
+            case 1 : cb = ui->combo2;
+                break;
+            case 2 : cb = ui->combo3;
+                break;
+            case 3 : cb = ui->combo4;
+                break;
+            }
+            if(cb->currentIndex()!=0) list.append(cb->currentText());
+            else list.append("");
         }
-        if(cb->currentIndex()!=0) list.append(cb->currentText());
-        else list.append("");
+        fillTabletLine(list);
     }
-
-
-    fillTabletLine(list);
-
-    if(!waitingForStartButton)timer.start();
-    stopped = 0;
 }
 
 
